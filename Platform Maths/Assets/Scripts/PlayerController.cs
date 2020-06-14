@@ -20,12 +20,11 @@ public class PlayerController : MonoBehaviour
     [Range(0.01f, 1f)]
     public float airControlSensitivity;
 
+    public float jetpackTriggerDown;
     public float jetpackForce;
     public float jetpackFuel;
     public float jetpackFuelRemaining;
     public float jetpackRefuelSpeed;
-
-    public Text remainingFuel;
 
     private Rigidbody2D rb;
 
@@ -60,8 +59,8 @@ public class PlayerController : MonoBehaviour
     public float playerHealthStart;
     public float playerHealthRemaining;
 
-    public GameObject uiPanel;
-    public bool showUIPanel;
+    public GameObject pausePanel;
+    public bool showPausePanel;
 
     public float fallVelocity;
     public float fallVelocityOnImpact;
@@ -78,14 +77,16 @@ public class PlayerController : MonoBehaviour
     public GameObject controlsPanel;
     public bool controlsPanelIsShowing;
 
-    // Start is called before the first frame update
+    public deathByFallDamageScript deathByFallDamageScript;
+
+        // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         jetpackFuelRemaining = jetpackFuel;
         playerHealthRemaining = playerHealthStart;
-        showUIPanel = false;
-        uiPanel.SetActive(false);
+        showPausePanel = false;
+        pausePanel.SetActive(false);
         levelCompletePanel.SetActive(false);
         playerScore = 0;
         controlsPanel.SetActive(false);
@@ -95,6 +96,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        jetpackTriggerDown = Input.GetAxisRaw("Jetpack");
+
         playerScoreText.text = playerScore.ToString();
 
         if (playerScore == levelCompleteScore)
@@ -149,13 +152,14 @@ public class PlayerController : MonoBehaviour
 
         //usejetpack
 
-        if ((Input.GetMouseButtonDown(1) || Input.GetButtonDown("Jetpack")) && jetpackFuelRemaining >= 0 && starUpgrades >= 5)
+        /*
+        if ((Input.GetMouseButtonDown(1) || jetpackTriggerDown == 1) && jetpackFuelRemaining >= 0 && starUpgrades >= 5)
         {
             SoundManagerScript.PlaySound("jetpack");
         }
-        
+        */
 
-        if ((Input.GetMouseButton(1) || Input.GetButton("Jetpack")) && starUpgrades >= 5)
+        if ((Input.GetMouseButton(1) || jetpackTriggerDown == 1) && starUpgrades >= 5)
         {
             if (jetpackFuelRemaining >= 0)
             {
@@ -276,20 +280,23 @@ public class PlayerController : MonoBehaviour
         }
 
         
+        // Show/Hide Pause Panel
 
         if (playerHealthRemaining <= 0)
         {
-            LevelRestart();
+            deathByFallDamageScript.isDeadByFallDamage = true;
+            deathByFallDamageScript.ShowDeathByFallDamagePanel();
+
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape) && showPausePanel == false)
         {
-            showUIPanel = true;
-            uiPanel.SetActive(true);
+            showPausePanel = true;
+            pausePanel.SetActive(true);
         }
-        else if (Input.GetKeyDown(KeyCode.Escape) && showUIPanel == true)
+        else if (Input.GetKeyDown(KeyCode.Escape) && showPausePanel == true)
         {
-            uiPanel.SetActive(false);
+            pausePanel.SetActive(false);
         }
 
     }
@@ -323,53 +330,7 @@ public class PlayerController : MonoBehaviour
         airJumpsRemaining--;
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Ground"))
-        {
-            animator.SetBool("isFalling", false);
-            animator.SetBool("isJumping", false);
-            animator.SetBool("isJetpacking", false);
-            isJumping = false;
-            isGrounded = true;
-            airJumpsRemaining = totalAirJumps;
-
-            fallVelocityOnImpact = Mathf.Abs(fallVelocity);
-
-            if (fallVelocityOnImpact >= maxSafeFallSpeed)
-            {
-                playerHealthRemaining = playerHealthRemaining - (fallVelocityOnImpact * fallDamageMultiplier);
-            }
-
-        }
-    }
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Ground"))
-        {
-            animator.SetBool("isJetpacking", false);
-            animator.SetBool("isFalling", false);
-            animator.SetBool("isJumping", false);
-            isJumping = false;
-            isGrounded = true;
-            airJumpsRemaining = totalAirJumps;
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Ground"))
-        {
-            if (isJumping == false)
-            {
-                animator.SetBool("isJumping", false);
-                animator.SetBool("isJetpacking", false);
-                animator.SetBool("isFalling", true);
-            }
-
-            isGrounded = false;
-        }
-    }
+    
 
     public void Restart()
     {
